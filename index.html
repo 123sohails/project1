@@ -1,0 +1,298 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CBIT Canteen</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-image: url('CBIT-slide.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="text-gray-800">
+  <div class="text-center py-5 text-white text-4xl font-bold bg-purple-900 bg-opacity-70 shadow-xl flex items-center justify-center gap-4">
+    <img src="https://img.icons8.com/emoji/48/000000/hamburger-emoji.png" alt="canteen icon" class="w-10 h-10">
+    Welcome to CBIT Canteen
+  </div>
+
+  <div class="navbar fixed top-2 left-1/2 transform -translate-x-1/2 w-[95%] flex justify-between items-center bg-purple-800 text-white px-4 py-3 rounded-xl shadow-lg z-50 hidden" id="navbar">
+    <div class="flex flex-wrap gap-3">
+      <a href="#" onclick="renderMenu()" class="hover:bg-purple-700 px-3 py-1 rounded transition">Menu</a>
+      <a href="#" onclick="renderCart()" class="hover:bg-purple-700 px-3 py-1 rounded transition">Cart</a>
+      <a href="#" onclick="renderOrders()" class="hover:bg-purple-700 px-3 py-1 rounded transition">Orders</a>
+      <a href="#" onclick="renderAdmin()" class="hover:bg-purple-700 px-3 py-1 rounded transition">Admin</a>
+    </div>
+    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded">Logout</button>
+  </div>
+
+  <div id="content" class="mt-10 max-w-2xl mx-auto bg-white/90 backdrop-blur-md p-6 rounded-xl shadow-xl animate-fadeIn w-[95%]"></div>
+
+  <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 px-4 py-2 bg-green-600 text-white rounded shadow-lg opacity-0 transition-opacity duration-500 z-50"></div>
+
+  <script>
+    let isAdmin = false;
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+    let menuItems = JSON.parse(localStorage.getItem('menu')) || [
+      { name: 'Biryani', price: 100 },
+      { name: 'Dosa', price: 40 },
+      { name: 'Samosa', price: 20 }
+    ];
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.innerText = message;
+      toast.style.opacity = 1;
+      setTimeout(() => toast.style.opacity = 0, 3000);
+    }
+
+    function renderMenu() {
+      const content = document.getElementById('content');
+      content.innerHTML = `
+        <h2 class="text-2xl font-bold mb-4">Menu</h2>
+        <ul class="space-y-3">
+          ${menuItems.map((item, index) => `
+            <li class="flex justify-between items-center bg-gray-100 p-3 rounded">
+              <span>${item.name} - ₹${item.price}</span>
+              <div>
+                <button onclick="addToCart(${index})" class="bg-green-500 text-white px-2 py-1 rounded mr-2">Add</button>
+                ${isAdmin ? `
+                  <button onclick="editItem(${index})" class="bg-yellow-500 text-white px-2 py-1 rounded mr-2">Edit</button>
+                  <button onclick="deleteItem(${index})" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>` : ''
+                }
+              </div>
+            </li>
+          `).join('')}
+        </ul>
+      `;
+    }
+
+    function addToCart(index) {
+      const item = menuItems[index];
+      cart.push(item);
+      localStorage.setItem('cart', JSON.stringify(cart));
+      showToast(`${item.name} added to cart!`);
+    }
+
+    function editItem(index) {
+      const newName = prompt("Enter new name:", menuItems[index].name);
+      const newPrice = parseFloat(prompt("Enter new price:", menuItems[index].price));
+      if (newName && !isNaN(newPrice)) {
+        menuItems[index].name = newName;
+        menuItems[index].price = newPrice;
+        localStorage.setItem('menu', JSON.stringify(menuItems));
+        renderAdmin();
+        showToast('Item updated!');
+      } else {
+        showToast('Invalid input!');
+      }
+    }
+
+    function deleteItem(index) {
+      if (confirm("Delete this item?")) {
+        menuItems.splice(index, 1);
+        localStorage.setItem('menu', JSON.stringify(menuItems));
+        renderAdmin();
+        showToast('Item deleted');
+      }
+    }
+
+    function renderAdmin() {
+      const content = document.getElementById('content');
+      const orders = JSON.parse(localStorage.getItem('orders')) || [];
+      if (!isAdmin) {
+        content.innerHTML = `<h2 class="text-xl font-semibold">Access Denied. Admins only.</h2>`;
+        return;
+      }
+      content.innerHTML = `
+        <h2 class="text-2xl font-bold mb-4">Admin Dashboard</h2>
+        <button onclick="addNewItem()" class="bg-blue-600 text-white px-4 py-2 rounded mb-4">Add New Menu Item</button>
+        <button onclick="clearOrders()" class="bg-red-600 text-white px-4 py-2 rounded mb-4 ml-2">Clear All Orders</button>
+        <p class="mb-2 font-medium">Total Orders: ${orders.length}</p>
+        <ul class="space-y-3">
+          ${menuItems.map((item, index) => `
+            <li class="flex justify-between items-center bg-gray-100 p-3 rounded">
+              <span>${item.name} - ₹${item.price}</span>
+              <div>
+                <button onclick="editItem(${index})" class="bg-yellow-500 text-white px-2 py-1 rounded mr-2">Edit</button>
+                <button onclick="deleteItem(${index})" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+              </div>
+            </li>
+          `).join('')}
+        </ul>
+      `;
+    }
+
+    function clearOrders() {
+      if (confirm("Are you sure you want to clear all orders?")) {
+        localStorage.removeItem('orders');
+        location.reload();
+      }
+    }
+
+    function addNewItem() {
+      const name = prompt("Enter dish name:");
+      const price = parseFloat(prompt("Enter price:"));
+      if (name && !isNaN(price)) {
+        menuItems.push({ name, price });
+        localStorage.setItem('menu', JSON.stringify(menuItems));
+        renderAdmin();
+        showToast('New item added!');
+      } else {
+        showToast('Invalid input!');
+      }
+    }
+
+    function renderOrders() {
+      const orders = JSON.parse(localStorage.getItem('orders')) || [];
+      const content = document.getElementById('content');
+      if (!orders.length) {
+        content.innerHTML = '<h2 class="text-xl font-semibold">No orders placed yet.</h2>';
+        return;
+      }
+      content.innerHTML = `
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-bold">Order History</h2>
+          ${!isAdmin ? '<button onclick="clearStudentOrders()" class="bg-red-500 text-white px-3 py-1 rounded">Clear My Orders</button>' : ''}
+        </div>
+        <div class="space-y-4">
+          ${orders.map(order => `
+            <div class="border p-4 rounded bg-gray-50">
+              <div><strong>Time:</strong> ${order.time}</div>
+              <div><strong>Dine Type:</strong> ${order.dineType}</div>
+              <div><strong>Payment:</strong> ${order.paymentMethod}</div>
+              <div><strong>Total:</strong> ₹${order.total}</div>
+              <ul class="mt-2 list-disc pl-6">
+                ${order.items.map(item => `<li>${item.name} - ₹${item.price}</li>`).join('')}
+              </ul>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function clearStudentOrders() {
+      if (confirm("Clear all your orders?")) {
+        localStorage.removeItem('orders');
+        location.reload();
+      }
+    }
+
+    function renderCart() {
+      const content = document.getElementById('content');
+      if (!cart.length) {
+        content.innerHTML = '<h2 class="text-xl font-semibold">Your cart is empty.</h2>';
+        return;
+      }
+      content.innerHTML = `
+        <h2 class="text-2xl font-bold mb-4">Your Cart</h2>
+        <ul class="space-y-3 mb-4">
+          ${cart.map((item, index) => `<li class="bg-gray-100 p-3 rounded flex justify-between">${item.name} - ₹${item.price} <button onclick="removeFromCart(${index})" class="text-red-500">Remove</button></li>`).join('')}
+        </ul>
+        <p class="mb-2 font-medium">Total: ₹${cart.reduce((acc, item) => acc + item.price, 0)}</p>
+        <select id="dineOption" class="mb-2 p-2 border rounded w-full">
+          <option value="Dine In">Dine In</option>
+          <option value="Take Away">Take Away</option>
+        </select>
+        <select id="paymentMethod" class="mb-4 p-2 border rounded w-full">
+          <option value="Cash on Delivery">Cash on Delivery</option>
+          <option value="PhonePe">PhonePe</option>
+          <option value="Online">Online</option>
+        </select>
+        <div class="flex gap-2">
+          <button onclick="placeOrder()" class="bg-blue-600 text-white px-4 py-2 rounded">Place Order</button>
+          <button onclick="clearCart()" class="bg-red-500 text-white px-4 py-2 rounded">Clear Cart</button>
+        </div>
+      `;
+    }
+
+    function clearCart() {
+      cart.length = 0;
+      localStorage.setItem('cart', JSON.stringify(cart));
+      renderCart();
+      showToast('Cart cleared!');
+    }
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      localStorage.setItem('cart', JSON.stringify(cart));
+      renderCart();
+    }
+
+    function placeOrder() {
+      const dineType = document.getElementById('dineOption')?.value || 'Not specified';
+      const paymentMethod = document.getElementById('paymentMethod')?.value || 'Not specified';
+      const total = cart.reduce((acc, item) => acc + item.price, 0);
+      const orderItems = [...cart];
+      const order = {
+        items: orderItems,
+        total,
+        dineType,
+        paymentMethod,
+        time: new Date().toLocaleString()
+      };
+
+      const existingOrders = JSON.parse(localStorage.getItem('orders')) || [];
+      existingOrders.push(order);
+      localStorage.setItem('orders', JSON.stringify(existingOrders));
+
+      showToast('Order placed!');
+      cart.length = 0;
+      localStorage.setItem('cart', JSON.stringify(cart));
+      renderOrders();
+    }
+
+    function logout() {
+      isAdmin = false;
+      document.getElementById('navbar').classList.add('hidden');
+      renderLogin();
+    }
+
+    function renderLogin() {
+      document.getElementById('content').innerHTML = `
+        <div class="text-center">
+          <h2 class="text-2xl font-bold mb-4">Login</h2>
+          <select id="userType" class="mb-4 p-2 border rounded">
+            <option value="student">Student</option>
+            <option value="admin">Admin</option>
+          </select>
+          <input type="password" id="password" class="block w-full p-2 border rounded mb-4" placeholder="Enter Password" />
+          <button onclick="login()" class="bg-blue-600 text-white px-4 py-2 rounded">Login</button>
+        </div>
+      `;
+    }
+
+    function login() {
+      const userType = document.getElementById('userType').value;
+      const password = document.getElementById('password').value;
+      if (userType === 'admin' && password === 'admin123') {
+        isAdmin = true;
+        document.getElementById('navbar').classList.remove('hidden');
+        renderMenu();
+      } else if (userType === 'student' && password === 'student123') {
+        isAdmin = false;
+        document.getElementById('navbar').classList.remove('hidden');
+        renderMenu();
+      } else {
+        showToast('Invalid credentials');
+      }
+      document.getElementById('password').value = '';
+    }
+
+    renderLogin();
+  </script>
+</body>
+</html>
